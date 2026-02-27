@@ -1,0 +1,17 @@
+[project]
+name = "doc2md"
+version = "0.1.0"
+description = "Convert generic documents (including docx and pdf with images and math formulas) into markdown folders."
+readme = "README.md"
+authors = [
+    { name = "Matteo Bortolotto", email = "mbortolotto@fbk.eu" }
+]
+requires-python = ">=3.12"
+dependencies = []
+
+[project.scripts]
+doc2md = "doc2md:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
