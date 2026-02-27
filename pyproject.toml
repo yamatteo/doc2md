@@ -20,6 +20,9 @@ doc2md = "doc2md.cli:main"
 [project.optional-dependencies]
 dev = [
     "pytest",
+    "python-docx",
+    "Pillow",
+    "reportlab",
 ]
 
 [build-system]

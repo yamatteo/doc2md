@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Optional
 
 from docling.document_converter import DocumentConverter
+from .utils import ensure_directory, extract_images_from_markdown
 
 
 class Doc2Md:
@@ -24,13 +25,33 @@ class Doc2Md:
         except Exception as exc:  # docling reports ConversionError, etc.
             # write a placeholder markdown so that callers still see an output
             md_path = dst_dir_path / (src_path.stem + ".md")
-            md_path.write_text(f"<!-- conversion failed: {exc} -->\n", encoding="utf-8")
+            md_path.write_text(
+                f"<!-- conversion failed: {exc} -->\n", encoding="utf-8"
+            )
             return md_path
 
         image_dir = dst_dir_path / (src_path.stem + "_files")
         image_dir.mkdir(exist_ok=True)
 
-        md_content = doc.export_to_markdown(image_dir=str(image_dir))
+        # Some docling versions do not accept an `image_dir` argument.
+        # Call export_to_markdown() without kwargs and post-process images.
+        md_content = doc.export_to_markdown()
+
+        # Post-process Markdown: extract any embedded data-URI images into image_dir
+        try:
+            md_content, _written = extract_images_from_markdown(md_content, image_dir)
+        except Exception:
+            # if extraction fails, continue with original md_content
+            pass
+
+        # Normalize math delimiters (\( \) -> $ $, \[ \] -> $$ $$)
+        try:
+            from .utils import normalize_math_in_markdown
+
+            md_content = normalize_math_in_markdown(md_content)
+        except Exception:
+            pass
+
         md_path = dst_dir_path / (src_path.stem + ".md")
         md_path.write_text(md_content, encoding="utf-8")
         return md_path
@@ -53,5 +74,10 @@ class Doc2Md:
         for entry in walker:
             if entry.is_file() and entry.suffix.lower() in {".pdf", ".docx"}:
                 rel = entry.relative_to(src_path)
-                out_dir = dst_path / rel.parent
+                # rel.parent is '.' for files at the root of src_path
+                if rel.parent == Path("."):
+                    out_dir = dst_path
+                else:
+                    out_dir = dst_path / rel.parent
+                ensure_directory(out_dir)
                 self.convert_file(str(entry), str(out_dir))
