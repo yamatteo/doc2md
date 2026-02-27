@@ -10,10 +10,17 @@ requires-python = ">=3.12"
 dependencies = [
     "docling>=2.75.0",
     "torchvision>=0.25.0",
+    "click>=8.0",
+    "reportlab>=4.4.10",
 ]
 
 [project.scripts]
-doc2md = "doc2md:main"
+doc2md = "doc2md.cli:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+]
 
 [build-system]
 requires = ["hatchling"]
