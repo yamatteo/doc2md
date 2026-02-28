@@ -68,9 +68,10 @@ class Doc2Md:
 
         # Normalize math delimiters (\( \) -> $ $, \[ \] -> $$ $$)
         try:
-            from .utils import normalize_math_in_markdown
+            from .utils import normalize_math_in_markdown, fix_pdf_extraction_artifacts
 
             md_content = normalize_math_in_markdown(md_content)
+            md_content = fix_pdf_extraction_artifacts(md_content)
         except Exception:
             pass
 
