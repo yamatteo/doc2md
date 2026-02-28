@@ -15,6 +15,7 @@ class Doc2Md:
         from docling.document_converter import PdfFormatOption
         from docling.datamodel.pipeline_options import PdfPipelineOptions
         from docling.datamodel.layout_model_specs import DOCLING_LAYOUT_V2
+        from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 
         pipeline_options = PdfPipelineOptions()
         pipeline_options.layout_options.model_spec = DOCLING_LAYOUT_V2
@@ -24,7 +25,8 @@ class Doc2Md:
         format_options = docling_options.pop("format_options", {})
         if InputFormat.PDF not in format_options:
             format_options[InputFormat.PDF] = PdfFormatOption(
-                pipeline_options=pipeline_options
+                pipeline_options=pipeline_options,
+                backend=PyPdfiumDocumentBackend
             )
 
         self.converter = DocumentConverter(
