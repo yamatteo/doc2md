@@ -1,7 +1,7 @@
 import shutil
 from pathlib import Path
 
-from tests.test_cli import run_cli
+from .test_cli import run_cli
 
 
 def count_paragraphs(md_text: str) -> int:

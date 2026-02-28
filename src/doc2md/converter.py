@@ -11,7 +11,25 @@ from .utils import ensure_directory, extract_images_from_markdown
 class Doc2Md:
     def __init__(self, **docling_options) -> None:
         """Initialize with optional Docling DocumentConverter options."""
-        self.converter = DocumentConverter(**docling_options)
+        from docling.datamodel.base_models import InputFormat
+        from docling.document_converter import PdfFormatOption
+        from docling.datamodel.pipeline_options import PdfPipelineOptions
+        from docling.datamodel.layout_model_specs import DOCLING_LAYOUT_V2
+
+        pipeline_options = PdfPipelineOptions()
+        pipeline_options.layout_options.model_spec = DOCLING_LAYOUT_V2
+        pipeline_options.do_formula_enrichment = True
+
+        # merge with provided options
+        format_options = docling_options.pop("format_options", {})
+        if InputFormat.PDF not in format_options:
+            format_options[InputFormat.PDF] = PdfFormatOption(
+                pipeline_options=pipeline_options
+            )
+
+        self.converter = DocumentConverter(
+            format_options=format_options, **docling_options
+        )
 
     def convert_file(self, src: str, dst_dir: str) -> Path:
         """Convert a single file and return path to generated markdown file."""
@@ -70,28 +88,21 @@ class Doc2Md:
         except Exception:
             pass
 
-        # simple heuristic to split overly long body into at least four paragraphs
+        # Post-process headers: if multiple level-1 headers, demote all but the first.
         try:
-            parts = md_content.split("\n\n")
-            # exclude title/subtitle if they exist (assume they occupy first two slots)
-            body = "\n\n".join(parts[2:]) if len(parts) > 2 else md_content
-            paras = [p for p in parts if p.strip()]
-            if len(paras) < 6:  # title+subtitle+4 paragraphs
-                # split body by sentences into roughly equal chunks
-                import re
-
-                sentences = re.split(r"(?<=[.!?]) +", body)
-                target = 4
-                if len(sentences) >= target:
-                    chunk_size = max(1, len(sentences) // target)
-                    new_paras = []
-                    for i in range(0, len(sentences), chunk_size):
-                        new_paras.append(
-                            " ".join(sentences[i : i + chunk_size])
-                        )
-                    # reconstruct
-                    header = "\n\n".join(parts[:2]) if len(parts) > 2 else ""
-                    md_content = header + "\n\n" + "\n\n".join(new_paras)
+            lines = md_content.splitlines()
+            new_lines = []
+            h1_found = False
+            for line in lines:
+                if line.startswith("# "):
+                    if h1_found:
+                        new_lines.append("## " + line[2:])
+                    else:
+                        new_lines.append(line)
+                        h1_found = True
+                else:
+                    new_lines.append(line)
+            md_content = "\n".join(new_lines)
         except Exception:
             pass
 
