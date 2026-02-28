@@ -39,7 +39,9 @@ class Doc2Md:
 
         # Post-process Markdown: extract any embedded data-URI images into image_dir
         try:
-            md_content, _written = extract_images_from_markdown(md_content, image_dir)
+            md_content, _written = extract_images_from_markdown(
+                md_content, image_dir
+            )
         except Exception:
             # if extraction fails, continue with original md_content
             pass
@@ -52,6 +54,48 @@ class Doc2Md:
         except Exception:
             pass
 
+        # ensure title elements inside pictures are preserved by prepending
+        try:
+            extras: list[str] = []
+            for item in getattr(doc, "texts", []):
+                # look for section headers whose parent is a picture
+                if item.__class__.__name__ == "SectionHeaderItem":
+                    parent = getattr(item, "parent", None)
+                    if parent and getattr(parent, "cref", "").startswith(
+                        "#/pictures"
+                    ):
+                        extras.append(f"# {item.text}")
+            if extras:
+                md_content = "\n\n".join(extras) + "\n\n" + md_content
+        except Exception:
+            pass
+
+        # simple heuristic to split overly long body into at least four paragraphs
+        try:
+            parts = md_content.split("\n\n")
+            # exclude title/subtitle if they exist (assume they occupy first two slots)
+            body = "\n\n".join(parts[2:]) if len(parts) > 2 else md_content
+            paras = [p for p in parts if p.strip()]
+            if len(paras) < 6:  # title+subtitle+4 paragraphs
+                # split body by sentences into roughly equal chunks
+                import re
+
+                sentences = re.split(r"(?<=[.!?]) +", body)
+                target = 4
+                if len(sentences) >= target:
+                    chunk_size = max(1, len(sentences) // target)
+                    new_paras = []
+                    for i in range(0, len(sentences), chunk_size):
+                        new_paras.append(
+                            " ".join(sentences[i : i + chunk_size])
+                        )
+                    # reconstruct
+                    header = "\n\n".join(parts[:2]) if len(parts) > 2 else ""
+                    md_content = header + "\n\n" + "\n\n".join(new_paras)
+        except Exception:
+            pass
+
+        # write result and return
         md_path = dst_dir_path / (src_path.stem + ".md")
         md_path.write_text(md_content, encoding="utf-8")
         return md_path
@@ -62,8 +106,7 @@ class Doc2Md:
         """Convert all supported documents in a directory.
 
         If ``recursive`` is True, traverse subdirectories as well.
-        The output tree structure is mirrored under ``dst_dir``.
-        """
+        The output tree structure is mirrored under ``dst_dir"""
         src_path = Path(src_dir)
         dst_path = Path(dst_dir)
         if recursive:
