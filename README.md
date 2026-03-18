@@ -12,6 +12,11 @@ Markdown files with extracted images and preserved math formulas.
 - **Images**: embedded data‑URI graphics are written to separate files and linked
 - **Batch & recursive processing**: convert single files or entire directories
 - **Customizable extensions**: limit file types via CLI option
+- **PDF text enhancement**: automatic fixing of common PDF extraction artifacts including:
+  - Misplaced diaeresis and accent marks
+  - Incorrect prime symbols and spacing
+  - Smushed text (words without spaces)
+  - Punctuation spacing issues
 - **Simple dependencies**: relies on `docling` for heavy lifting
 
 > The workhorse is `docling`; this project adds convenient I/O, postprocessing,
@@ -83,6 +88,8 @@ uv run python -m pytest -q
 - Add support for additional formats via `docling` (e.g. PPTX, HTML)
 - Improve math extraction, parallel batch processing, and progress reporting
 - Publish to PyPI and add versioning
+- Extend PDF text enhancement with more character encoding fixes
+- Add configurable options for text processing intensity
 
 ## License
 
